@@ -6,16 +6,17 @@ const { sendResetPasswordEmail } = require("../services/email.service");
 const env = require("../config/env");
 
 async function register(req, res) {
-  const { name, email, password } = req.body;
+  const { name, email, phone, password } = req.body;
 
-  const existingUser = await User.findOne({ where: { email } });
+  const existingUser = await User.findOne({ where: { phone } });
   if (existingUser) {
-    return res.status(409).json({ message: "Email already in use" });
+    return res.status(409).json({ message: "Phone number already in use" });
   }
 
   const user = await User.create({
     name,
     email,
+    phone,
     password,
     provider: "local",
     isVerified: true,
@@ -29,21 +30,26 @@ async function register(req, res) {
       id: user.id,
       name: user.name,
       email: user.email,
+      phone: user.phone,
     },
   });
 }
 
 async function login(req, res) {
-  const { email, password } = req.body;
+  const { phone, password } = req.body;
 
-  const user = await User.findOne({ where: { email } });
+  const user = await User.findOne({ where: { phone } });
   if (!user) {
-    return res.status(401).json({ message: "Invalid email or password" });
+    return res
+      .status(401)
+      .json({ message: "Invalid phone number or password" });
   }
 
   const isPasswordValid = await user.comparePassword(password);
   if (!isPasswordValid) {
-    return res.status(401).json({ message: "Invalid email or password" });
+    return res
+      .status(401)
+      .json({ message: "Invalid phone number or password" });
   }
 
   const token = signToken(user);
@@ -54,6 +60,7 @@ async function login(req, res) {
       id: user.id,
       name: user.name,
       email: user.email,
+      phone: user.phone,
     },
   });
 }
