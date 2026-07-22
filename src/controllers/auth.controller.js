@@ -6,7 +6,7 @@ const { sendResetPasswordEmail } = require("../services/email.service");
 const env = require("../config/env");
 
 async function register(req, res) {
-  const { name, email, phone, password } = req.body;
+  const { role, name, email, phone, password } = req.body;
 
   const existingUser = await User.findOne({ where: { phone } });
   if (existingUser) {
@@ -14,6 +14,7 @@ async function register(req, res) {
   }
 
   const user = await User.create({
+    role,
     name,
     email,
     phone,

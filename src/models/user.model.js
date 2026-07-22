@@ -10,6 +10,11 @@ module.exports = (sequelize) => {
         autoIncrement: true,
         primaryKey: true,
       },
+      role: {
+        type: DataTypes.ENUM("customer", "admin"),
+        allowNull: false,
+        defaultValue: "customer",
+      },
       name: {
         type: DataTypes.STRING(100),
         allowNull: false,
