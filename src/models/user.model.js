@@ -11,9 +11,9 @@ module.exports = (sequelize) => {
         primaryKey: true,
       },
       role: {
-        type: DataTypes.ENUM("customer", "admin"),
+        type: DataTypes.ENUM("buyer", "admin"),
         allowNull: false,
-        defaultValue: "customer",
+        defaultValue: "buyer",
       },
       name: {
         type: DataTypes.STRING(100),
@@ -29,10 +29,21 @@ module.exports = (sequelize) => {
       },
       phone: {
         type: DataTypes.STRING(15),
-        allowNull: false,
+        allowNull: true,
         unique: true,
         validate: {
-          is: /^[0-9]+$/, // Only allow numbers
+          isValidPhone(value) {
+            if (value === null || value === undefined || value === "") {
+              if (this.provider === "local") {
+                throw new Error("Phone number is required for local accounts");
+              }
+              return;
+            }
+
+            if (!/^[0-9]+$/.test(value)) {
+              throw new Error("Phone number must contain only digits");
+            }
+          },
         },
       },
       password: {

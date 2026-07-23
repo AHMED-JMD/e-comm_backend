@@ -25,7 +25,10 @@ router.post(
 router.post(
   "/login",
   [
-    body("phone").trim().notEmpty().withMessage("Phone number is required"),
+    body("identifier")
+      .trim()
+      .notEmpty()
+      .withMessage("Email or phone is required"),
     body("password").notEmpty().withMessage("Password is required"),
     validateRequest,
   ],

@@ -37,20 +37,24 @@ async function register(req, res) {
 }
 
 async function login(req, res) {
-  const { phone, password } = req.body;
+  const { identifier, password } = req.body;
+  const normalizedIdentifier = String(identifier || "").trim();
 
-  const user = await User.findOne({ where: { phone } });
+  const user = await User.findOne({
+    where: {
+      [Op.or]: [
+        { phone: normalizedIdentifier },
+        { email: normalizedIdentifier.toLowerCase() },
+      ],
+    },
+  });
   if (!user) {
-    return res
-      .status(401)
-      .json({ message: "Invalid phone number or password" });
+    return res.status(401).json({ message: "Invalid email/phone or password" });
   }
 
   const isPasswordValid = await user.comparePassword(password);
   if (!isPasswordValid) {
-    return res
-      .status(401)
-      .json({ message: "Invalid phone number or password" });
+    return res.status(401).json({ message: "Invalid email/phone or password" });
   }
 
   const token = signToken(user);
@@ -72,7 +76,8 @@ async function forgotPassword(req, res) {
   const user = await User.findOne({ where: { email } });
   if (!user) {
     return res.status(200).json({
-      message: "If this email exists, a reset link has been sent",
+      message:
+        "المستخدم غير موجود. إذا كان البريد الإلكتروني مسجلاً، فسيصلك رابط إعادة التعيين.",
     });
   }
 
