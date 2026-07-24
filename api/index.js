@@ -57,9 +57,6 @@ module.exports = async (req, res) => {
       return res.status(200).json({
         status: "ok",
         db: "connected",
-        host: env.db.host,
-        port: env.db.port,
-        name: env.db.name,
       });
     } catch (error) {
       const summary = summarizeBootstrapError(error);
