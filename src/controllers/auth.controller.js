@@ -126,6 +126,42 @@ async function resetPassword(req, res) {
     .json({ message: "Password has been reset successfully" });
 }
 
+async function updateProfile(req, res) {
+  const { name, phone } = req.body;
+  const normalizedName = String(name || "").trim();
+  const normalizedPhone = String(phone || "").trim();
+
+  const existingUser = await User.findOne({
+    where: {
+      phone: normalizedPhone,
+      id: {
+        [Op.ne]: req.user.id,
+      },
+    },
+  });
+
+  if (existingUser) {
+    return res.status(409).json({ message: "Phone number already in use" });
+  }
+
+  req.user.name = normalizedName;
+  req.user.phone = normalizedPhone;
+  await req.user.save();
+
+  return res.status(200).json({
+    message: "Profile updated successfully",
+    user: {
+      id: req.user.id,
+      role: req.user.role,
+      name: req.user.name,
+      email: req.user.email,
+      phone: req.user.phone,
+      provider: req.user.provider,
+      isVerified: req.user.isVerified,
+    },
+  });
+}
+
 function googleCallback(req, res) {
   const token = signToken(req.user);
 
@@ -147,6 +183,7 @@ module.exports = {
   login,
   forgotPassword,
   resetPassword,
+  updateProfile,
   googleCallback,
   me,
 };

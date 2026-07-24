@@ -56,6 +56,24 @@ router.post(
   authController.resetPassword,
 );
 
+router.put(
+  "/profile",
+  protect,
+  [
+    body("name").trim().notEmpty().withMessage("Name is required"),
+    body("phone")
+      .trim()
+      .notEmpty()
+      .withMessage("Phone number is required")
+      .matches(/^[0-9]+$/)
+      .withMessage("Phone number must contain only digits")
+      .isLength({ min: 10, max: 15 })
+      .withMessage("Phone number must be between 10 and 15 digits"),
+    validateRequest,
+  ],
+  authController.updateProfile,
+);
+
 router.get("/google", (req, res, next) => {
   if (!passport.googleEnabled) {
     return res.status(503).json({ message: "Google auth is not configured" });
