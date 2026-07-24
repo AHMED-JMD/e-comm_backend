@@ -5,7 +5,9 @@ const { sequelize } = require("./models");
 async function startServer() {
   try {
     await sequelize.authenticate();
-    await sequelize.sync(); // Sync models with the database, altering tables if necessary
+    if (env.db.sync) {
+      await sequelize.sync();
+    }
 
     app.listen(env.port, () => {
       console.log(`Server running on port ${env.port}`);

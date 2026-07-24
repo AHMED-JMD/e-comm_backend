@@ -11,6 +11,16 @@ module.exports = {
     name: process.env.DB_NAME || "ecomm_db",
     user: process.env.DB_USER || "root",
     password: process.env.DB_PASSWORD || "",
+    ssl:
+      process.env.DB_SSL === undefined ? true : process.env.DB_SSL === "true",
+    sslRejectUnauthorized:
+      process.env.DB_SSL_REJECT_UNAUTHORIZED === undefined
+        ? true
+        : process.env.DB_SSL_REJECT_UNAUTHORIZED === "true",
+    sync:
+      process.env.DB_SYNC === undefined
+        ? process.env.NODE_ENV !== "production"
+        : process.env.DB_SYNC === "true",
   },
   jwtSecret: process.env.JWT_SECRET || "change_me_in_production",
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || "7d",
