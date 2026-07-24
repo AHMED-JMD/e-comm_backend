@@ -116,7 +116,7 @@ async function resetPassword(req, res) {
   }
 
   user.password = newPassword;
-  user.provider = "local";
+  // user.provider = "local";
   user.resetPasswordToken = null;
   user.resetPasswordExpires = null;
   await user.save();

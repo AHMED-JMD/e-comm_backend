@@ -1,5 +1,13 @@
 let bootstrapPromise;
 
+// Ensure mysql2 is included in the serverless bundle (Sequelize loads it dynamically).
+require("mysql2");
+
+function isHealthRequest(req) {
+  const path = (req.url || "").split("?")[0];
+  return path === "/api/health" || path === "/health";
+}
+
 async function bootstrap() {
   if (!bootstrapPromise) {
     bootstrapPromise = (async () => {
@@ -24,11 +32,16 @@ async function bootstrap() {
 }
 
 module.exports = async (req, res) => {
+  // Keep health checks independent from DB availability on serverless cold starts.
+  if (isHealthRequest(req)) {
+    return res.status(200).json({ status: "ok" });
+  }
+
   try {
     const app = await bootstrap();
     return app(req, res);
   } catch (error) {
     console.error("Serverless bootstrap failed:", error);
-    return res.status(500).json({ message: "Internal server error" });
+    return res.status(503).json({ message: "Service unavailable" });
   }
 };
