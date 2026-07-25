@@ -32,6 +32,9 @@ async function register(req, res) {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      role: user.role,
+      provider: user.provider,
+      isVerified: user.isVerified,
     },
   });
 }
@@ -66,6 +69,9 @@ async function login(req, res) {
       name: user.name,
       email: user.email,
       phone: user.phone,
+      role: user.role,
+      provider: user.provider,
+      isVerified: user.isVerified,
     },
   });
 }
