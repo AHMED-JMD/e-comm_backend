@@ -1,13 +1,12 @@
 const app = require("./app");
 const env = require("./config/env");
 const { sequelize } = require("./models");
+const { runSafeSchemaSync } = require("./utils/schema-sync");
 
 async function startServer() {
   try {
     await sequelize.authenticate();
-    if (env.db.sync) {
-      await sequelize.sync();
-    }
+    await runSafeSchemaSync({ sequelize, shouldSync: env.db.sync });
 
     app.listen(env.port, () => {
       console.log(`Server running on port ${env.port}`);
