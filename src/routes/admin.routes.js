@@ -1,12 +1,53 @@
 const express = require("express");
 const { body, param, query } = require("express-validator");
 const adminController = require("../controllers/admin.controller");
+const categoryController = require("../controllers/category.controller");
 const { validateRequest } = require("../middlewares/validate.middleware");
 const { protect, requireAdmin } = require("../middlewares/auth.middleware");
+const { uploadProductImage } = require("../middlewares/upload.middleware");
 
 const router = express.Router();
 
 router.use(protect, requireAdmin);
+
+//category routes
+router.post(
+  "/categories",
+  [
+    body("name").trim().notEmpty().withMessage("Category name is required"),
+    body("description").optional().isString(),
+    validateRequest,
+  ],
+  categoryController.createCategory,
+);
+
+router.get("/categories", categoryController.listCategories);
+
+router.put(
+  "/categories/:id",
+  [
+    param("id")
+      .isInt({ min: 1 })
+      .withMessage("Valid category id is required")
+      .toInt(),
+    body("name").trim().notEmpty().withMessage("Category name is required"),
+    body("description").optional().isString(),
+    validateRequest,
+  ],
+  categoryController.updateCategory,
+);
+
+router.delete(
+  "/categories/:id",
+  [
+    param("id")
+      .isInt({ min: 1 })
+      .withMessage("Valid category id is required")
+      .toInt(),
+    validateRequest,
+  ],
+  categoryController.deleteCategory,
+);
 
 //store routes
 router.post(
@@ -20,6 +61,10 @@ router.post(
     body("address").trim().notEmpty().withMessage("Store address is required"),
     body("description").optional().isString(),
     body("phone").trim().notEmpty().withMessage("Store phone is required"),
+    body("categoryId")
+      .isInt({ min: 1 })
+      .withMessage("Valid categoryId is required")
+      .toInt(),
     validateRequest,
   ],
   adminController.createStore,
@@ -39,6 +84,10 @@ router.put(
     body("address").trim().notEmpty().withMessage("Store address is required"),
     body("description").optional().isString(),
     body("phone").trim().notEmpty().withMessage("Store phone is required"),
+    body("categoryId")
+      .isInt({ min: 1 })
+      .withMessage("Valid categoryId is required")
+      .toInt(),
     validateRequest,
   ],
   adminController.updateStore,
@@ -60,15 +109,16 @@ router.delete(
 router.post(
   "/products",
   [
+    uploadProductImage.single("image"),
     body("storeId")
       .isInt({ min: 1 })
       .withMessage("Valid storeId is required")
       .toInt(),
     body("name").trim().notEmpty().withMessage("Product name is required"),
-    body("category")
-      .trim()
-      .notEmpty()
-      .withMessage("Product category is required"),
+    body("categoryId")
+      .isInt({ min: 1 })
+      .withMessage("Valid categoryId is required")
+      .toInt(),
     body("price")
       .isFloat({ min: 0 })
       .withMessage("Product price must be a non-negative number")
@@ -91,6 +141,7 @@ router.get(
   "/products",
   [
     query("storeId").optional().isInt({ min: 1 }).toInt(),
+    query("categoryId").optional().isInt({ min: 1 }).toInt(),
     query("active").optional().isBoolean(),
     query("category").optional().isString(),
     query("search").optional().isString(),
@@ -99,6 +150,80 @@ router.get(
     validateRequest,
   ],
   adminController.listProducts,
+);
+
+router.put(
+  "/products/:id",
+  [
+    param("id")
+      .isInt({ min: 1 })
+      .withMessage("Valid product id is required")
+      .toInt(),
+    body("storeId")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage("Valid storeId is required")
+      .toInt(),
+    body("name").trim().notEmpty().withMessage("Product name is required"),
+    body("categoryId")
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage("Valid categoryId is required")
+      .toInt(),
+    body("description").optional().isString(),
+    body("price")
+      .isFloat({ min: 0 })
+      .withMessage("Product price must be a non-negative number")
+      .toFloat(),
+    body("stock")
+      .optional()
+      .isInt({ min: 0 })
+      .withMessage("Product stock must be a non-negative integer")
+      .toInt(),
+    body("isActive")
+      .optional()
+      .isBoolean()
+      .withMessage("isActive must be boolean"),
+    validateRequest,
+  ],
+  adminController.updateProduct,
+);
+
+router.delete(
+  "/products/:id",
+  [
+    param("id")
+      .isInt({ min: 1 })
+      .withMessage("Valid product id is required")
+      .toInt(),
+    validateRequest,
+  ],
+  adminController.deleteProduct,
+);
+
+router.patch(
+  "/products/:id/image",
+  [
+    uploadProductImage.single("image"),
+    param("id")
+      .isInt({ min: 1 })
+      .withMessage("Valid product id is required")
+      .toInt(),
+    validateRequest,
+  ],
+  adminController.updateProductImage,
+);
+
+router.delete(
+  "/products/:id/image",
+  [
+    param("id")
+      .isInt({ min: 1 })
+      .withMessage("Valid product id is required")
+      .toInt(),
+    validateRequest,
+  ],
+  adminController.removeProductImage,
 );
 
 //orders routes

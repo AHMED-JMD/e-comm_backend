@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const { Op } = require("sequelize");
 const {
   Store,
@@ -5,8 +7,23 @@ const {
   Order,
   OrderItem,
   User,
+  Category,
   sequelize,
 } = require("../models");
+const { UPLOAD_ROOT } = require("../middlewares/upload.middleware");
+
+function deleteProductImageFile(imagePath) {
+  if (!imagePath) return;
+
+  const relativePath = imagePath.replace(/^\/?uploads\//, "");
+  const fullPath = path.join(UPLOAD_ROOT, relativePath);
+
+  fs.unlink(fullPath, (err) => {
+    if (err && err.code !== "ENOENT") {
+      console.error("Failed to delete product image file:", err);
+    }
+  });
+}
 
 const ORDER_STATUSES = [
   "pending",
@@ -31,7 +48,12 @@ function parsePagination(query) {
 }
 
 async function createStore(req, res) {
-  const { name, ownerName, address, description, phone } = req.body;
+  const { name, ownerName, address, description, phone, categoryId } = req.body;
+
+  const category = await Category.findByPk(categoryId);
+  if (!category) {
+    return res.status(404).json({ message: "Category not found" });
+  }
 
   const store = await Store.create({
     name: String(name).trim(),
@@ -39,6 +61,7 @@ async function createStore(req, res) {
     address: String(address).trim(),
     description: description ? String(description).trim() : null,
     phone: String(phone).trim(),
+    categoryId,
     createdBy: req.user.id,
   });
 
@@ -57,6 +80,11 @@ async function listStores(_req, res) {
         as: "creator",
         attributes: ["id", "name", "email"],
       },
+      {
+        model: Category,
+        as: "category",
+        attributes: ["id", "name"],
+      },
     ],
   });
 
@@ -65,11 +93,19 @@ async function listStores(_req, res) {
 
 async function updateStore(req, res) {
   const { id } = req.params;
-  const { name, ownerName, address, description, phone } = req.body;
+  const { name, ownerName, address, description, phone, categoryId } = req.body;
 
   const store = await Store.findByPk(id);
   if (!store) {
     return res.status(404).json({ message: "Store not found" });
+  }
+
+  if (categoryId !== undefined) {
+    const category = await Category.findByPk(categoryId);
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    store.categoryId = categoryId;
   }
 
   store.name = String(name).trim();
@@ -110,7 +146,7 @@ async function deleteStore(req, res) {
 }
 
 async function createProduct(req, res) {
-  const { storeId, name, description, category, price, stock, isActive } =
+  const { storeId, name, description, categoryId, price, stock, isActive } =
     req.body;
 
   const store = await Store.findByPk(storeId);
@@ -118,11 +154,20 @@ async function createProduct(req, res) {
     return res.status(404).json({ message: "Store not found" });
   }
 
+  const category = await Category.findByPk(categoryId);
+  if (!category) {
+    return res.status(404).json({ message: "Category not found" });
+  }
+
+  const image = req.file ? `/uploads/products/${req.file.filename}` : null;
+
   const product = await Product.create({
     storeId,
     name: String(name).trim(),
     description: description ? String(description).trim() : null,
-    category: String(category).trim(),
+    category: category.name,
+    categoryId,
+    image,
     price,
     stock,
     isActive: typeof isActive === "boolean" ? isActive : true,
@@ -135,14 +180,134 @@ async function createProduct(req, res) {
   });
 }
 
+async function updateProductImage(req, res) {
+  const { id } = req.params;
+
+  if (!req.file) {
+    return res.status(400).json({ message: "Image file is required" });
+  }
+
+  const product = await Product.findByPk(id);
+  if (!product) {
+    return res.status(404).json({ message: "Product not found" });
+  }
+
+  const previousImage = product.image;
+  product.image = `/uploads/products/${req.file.filename}`;
+  await product.save();
+  deleteProductImageFile(previousImage);
+
+  return res.status(200).json({
+    message: "Product image updated successfully",
+    product,
+  });
+}
+
+async function removeProductImage(req, res) {
+  const { id } = req.params;
+
+  const product = await Product.findByPk(id);
+  if (!product) {
+    return res.status(404).json({ message: "Product not found" });
+  }
+
+  if (product.image) {
+    deleteProductImageFile(product.image);
+    product.image = null;
+    await product.save();
+  }
+
+  return res.status(200).json({
+    message: "Product image removed successfully",
+    product,
+  });
+}
+
+async function updateProduct(req, res) {
+  const { id } = req.params;
+  const { storeId, name, description, categoryId, price, stock, isActive } =
+    req.body;
+
+  const product = await Product.findByPk(id);
+  if (!product) {
+    return res.status(404).json({ message: "Product not found" });
+  }
+
+  if (storeId !== undefined) {
+    const store = await Store.findByPk(storeId);
+    if (!store) {
+      return res.status(404).json({ message: "Store not found" });
+    }
+    product.storeId = storeId;
+  }
+
+  if (categoryId !== undefined) {
+    const category = await Category.findByPk(categoryId);
+    if (!category) {
+      return res.status(404).json({ message: "Category not found" });
+    }
+    product.categoryId = categoryId;
+    product.category = category.name;
+  }
+
+  product.name = String(name).trim();
+  product.description = description ? String(description).trim() : null;
+  product.price = price;
+
+  if (stock !== undefined) {
+    product.stock = stock;
+  }
+
+  if (typeof isActive === "boolean") {
+    product.isActive = isActive;
+  }
+
+  await product.save();
+
+  return res.status(200).json({
+    message: "Product updated successfully",
+    product,
+  });
+}
+
+async function deleteProduct(req, res) {
+  const { id } = req.params;
+
+  const product = await Product.findByPk(id);
+  if (!product) {
+    return res.status(404).json({ message: "Product not found" });
+  }
+
+  const orderItemsCount = await OrderItem.count({
+    where: { productId: product.id },
+  });
+
+  if (orderItemsCount > 0) {
+    return res.status(409).json({
+      message:
+        "Cannot delete product referenced by existing orders. Remove related order items first.",
+    });
+  }
+
+  const imagePath = product.image;
+  await product.destroy();
+  deleteProductImageFile(imagePath);
+
+  return res.status(200).json({ message: "Product deleted successfully" });
+}
+
 async function listProducts(req, res) {
-  const { storeId, category, active, search } = req.query;
+  const { storeId, category, categoryId, active, search } = req.query;
   const { page, limit, offset } = parsePagination(req.query);
 
   const where = {};
 
   if (storeId) {
     where.storeId = Number(storeId);
+  }
+
+  if (categoryId) {
+    where.categoryId = Number(categoryId);
   }
 
   if (category) {
@@ -175,6 +340,11 @@ async function listProducts(req, res) {
         model: User,
         as: "creator",
         attributes: ["id", "name", "email"],
+      },
+      {
+        model: Category,
+        as: "categoryInfo",
+        attributes: ["id", "name"],
       },
     ],
     order: [["createdAt", "DESC"]],
@@ -399,6 +569,10 @@ module.exports = {
   updateStore,
   deleteStore,
   createProduct,
+  updateProduct,
+  deleteProduct,
+  updateProductImage,
+  removeProductImage,
   listProducts,
   listOrders,
   updateOrderStatus,

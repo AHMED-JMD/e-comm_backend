@@ -25,6 +25,39 @@ async function ensureStoreColumns(sequelize) {
       allowNull: true,
     });
   }
+
+  if (!columns.categoryId) {
+    await queryInterface.addColumn("stores", "categoryId", {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    });
+  }
+}
+
+async function ensureProductColumns(sequelize) {
+  const queryInterface = sequelize.getQueryInterface();
+
+  let columns;
+  try {
+    columns = await queryInterface.describeTable("products");
+  } catch (_error) {
+    // Table does not exist yet; regular sequelize.sync() will create it.
+    return;
+  }
+
+  if (!columns.image) {
+    await queryInterface.addColumn("products", "image", {
+      type: DataTypes.STRING(255),
+      allowNull: true,
+    });
+  }
+
+  if (!columns.categoryId) {
+    await queryInterface.addColumn("products", "categoryId", {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    });
+  }
 }
 
 async function runSafeSchemaSync({ sequelize, shouldSync }) {
@@ -34,6 +67,7 @@ async function runSafeSchemaSync({ sequelize, shouldSync }) {
 
   await sequelize.sync();
   await ensureStoreColumns(sequelize);
+  await ensureProductColumns(sequelize);
 }
 
 module.exports = {

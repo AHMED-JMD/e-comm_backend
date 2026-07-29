@@ -4,12 +4,14 @@ const StoreFactory = require("./store.model");
 const ProductFactory = require("./product.model");
 const OrderFactory = require("./order.model");
 const OrderItemFactory = require("./order-item.model");
+const CategoryFactory = require("./category.model");
 
 const User = UserFactory(sequelize);
 const Store = StoreFactory(sequelize);
 const Product = ProductFactory(sequelize);
 const Order = OrderFactory(sequelize);
 const OrderItem = OrderItemFactory(sequelize);
+const Category = CategoryFactory(sequelize);
 
 Store.belongsTo(User, { foreignKey: "createdBy", as: "creator" });
 User.hasMany(Store, { foreignKey: "createdBy", as: "createdStores" });
@@ -19,6 +21,12 @@ Store.hasMany(Product, { foreignKey: "storeId", as: "products" });
 
 Product.belongsTo(User, { foreignKey: "createdBy", as: "creator" });
 User.hasMany(Product, { foreignKey: "createdBy", as: "createdProducts" });
+
+Category.hasMany(Store, { foreignKey: "categoryId", as: "stores" });
+Store.belongsTo(Category, { foreignKey: "categoryId", as: "category" });
+
+Category.hasMany(Product, { foreignKey: "categoryId", as: "products" });
+Product.belongsTo(Category, { foreignKey: "categoryId", as: "categoryInfo" });
 
 Order.belongsTo(Store, { foreignKey: "storeId", as: "store" });
 Store.hasMany(Order, { foreignKey: "storeId", as: "orders" });
@@ -36,4 +44,5 @@ module.exports = {
   Product,
   Order,
   OrderItem,
+  Category,
 };

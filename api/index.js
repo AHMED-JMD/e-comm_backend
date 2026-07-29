@@ -23,12 +23,10 @@ async function bootstrap() {
       const app = require("../src/app");
       const env = require("../src/config/env");
       const { sequelize } = require("../src/models");
+      const { runSafeSchemaSync } = require("../src/utils/schema-sync");
 
       await sequelize.authenticate();
-
-      if (env.db.sync) {
-        await sequelize.sync();
-      }
+      await runSafeSchemaSync({ sequelize, shouldSync: env.db.sync });
 
       return app;
     })().catch((error) => {

@@ -25,6 +25,10 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      categoryId: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: true,
+      },
       phone: {
         type: DataTypes.STRING(20),
         allowNull: false,

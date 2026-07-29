@@ -38,6 +38,6 @@ module.exports = {
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     callbackUrl:
       process.env.GOOGLE_CALLBACK_URL ||
-      "http://localhost:5000/api/auth/google/callback",
+      "http://localhost:5050/api/auth/google/callback",
   },
 };
